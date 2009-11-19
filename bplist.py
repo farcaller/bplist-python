@@ -74,12 +74,14 @@ class BPlistReader(object):
         elif obj_type == 0x30: #    date    0011 0011   ...     // 8 byte float follows, big-endian bytes
             return # FIXME: implement
         elif obj_type == 0x40: #    data    0100 nnnn   [int]   ... // nnnn is number of bytes unless 1111 then int count follows, followed by bytes
-            return # FIXME: implement
+            obj_count, objref = self.__resolveIntSize(obj_info, offset)
+            return self.data[objref:objref+obj_count] # XXX: we return data as str
         elif obj_type == 0x50: #    string  0101 nnnn   [int]   ... // ASCII string, nnnn is # of chars, else 1111 then int count, then bytes
             obj_count, objref = self.__resolveIntSize(obj_info, offset)
             return self.data[objref:objref+obj_count]
         elif obj_type == 0x60: #    string  0110 nnnn   [int]   ... // Unicode string, nnnn is # of chars, else 1111 then int count, then big-endian 2-byte uint16_t
-            return # FIXME: implement
+            obj_count, objref = self.__resolveIntSize(obj_info, offset)
+            return self.data[objref:objref+obj_count].decode('utf-16be')
         elif obj_type == 0x80: #    uid     1000 nnnn   ...     // nnnn+1 is # of bytes
             return # FIXME: implement
         elif obj_type == 0xA0: #    array   1010 nnnn   [int]   objref* // nnnn is count, unless '1111', then int count follows
