@@ -68,7 +68,7 @@ class BPlistReader(object):
             else:
                 raise Exception('unpack item type '+str(obj_header)+' at '+str(offset)+ 'failed')
         elif obj_type == 0x10: #     int    0001 nnnn   ...     // # of bytes is 2^nnnn, big-endian bytes
-            return self._unpackInt(offset)
+            return self.__unpackInt(offset)
         elif obj_type == 0x20: #    real    0010 nnnn   ...     // # of bytes is 2^nnnn, big-endian bytes
             return # FIXME: implement
         elif obj_type == 0x30: #    date    0011 0011   ...     // 8 byte float follows, big-endian bytes
