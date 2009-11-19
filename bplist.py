@@ -109,6 +109,33 @@ class BPlistReader(object):
         else:
             raise Exception('don\'t know how to unpack obj type '+str(obj_type))
     
+    def __resolveObject(self, idx):
+        obj, resolved = self.objects[idx]
+        if resolved:
+            print "** plist already resolved",idx,obj
+            return obj
+        else:
+            if type(obj) == list:
+                newArr = []
+                for i in obj:
+                    newArr.append(self.__resolveObject(i))
+                self.objects = self.objects[:idx] + [(newArr, True)] + self.objects[idx+1:]
+                print "** plist resolved",idx,obj,"to",newArr
+                return newArr
+            if type(obj) == dict:
+                newDic = {}
+                for k,v in obj.iteritems():
+                    rk = self.__resolveObject(k)
+                    rv = self.__resolveObject(v)
+                    newDic[rk] = rv
+                self.objects = self.objects[:idx] + [(newDic, True)] + self.objects[idx+1:]
+                print "** plist resolved",idx,obj,"to",newDic
+                return newDic
+            else:
+                self.objects = self.objects[:idx] + [(obj, True)] + self.objects[idx+1:]
+                print "** plist resolved",idx,obj
+                return obj
+    
     def parse(self):
         # read header
         if self.data[:8] != 'bplist00':
@@ -130,29 +157,19 @@ class BPlistReader(object):
         
         # read object table
         self.objects = []
+        k = 0
         for i in self.offsets:
             obj = self.__unpackItem(i)
-            print "** plist unpacked",type(obj),obj,"at",i
-            self.objects.append(obj)
+            print "** plist unpacked",k,type(obj),obj,"at",i
+            k += 1
+            self.objects.append((obj,False))
         
         # rebuild object tree
-        newTree = []
-        for obj in self.objects:
-            if type(obj) == list:
-                newArr = []
-                for i in obj:
-                    newArr.append(self.objects[i])
-                newTree.append(newArr)
-            if type(obj) == dict:
-                newDic = {}
-                for k,v in obj.iteritems():
-                    newDic[self.objects[k]] = self.objects[v]
-                newTree.append(newDic)
-            else:
-                newTree.append(obj)
+        for i in range(len(self.objects)):
+            self.__resolveObject(i)
         
         # return root object
-        return newTree[self.top_object]        
+        return self.objects[self.top_object][0]
     
     @classmethod
     def plistWithString(cls, s):
