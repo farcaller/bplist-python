@@ -3,6 +3,8 @@ import struct
 class BPlistReader(object):
     def __init__(self, s):
         self.data = s
+        self.objects = []
+        self.resolved = {}
     
     def __unpackIntStruct(self, sz, s):
         '''__unpackIntStruct(size, string) -> int
@@ -110,16 +112,15 @@ class BPlistReader(object):
             raise Exception('don\'t know how to unpack obj type '+hex(obj_type)+' at '+str(offset))
     
     def __resolveObject(self, idx):
-        obj, resolved = self.objects[idx]
-        if resolved:
-            #print "** plist already resolved",idx,obj
-            return obj
-        else:
+        try:
+            return self.resolved[idx]
+        except KeyError:
+            obj = self.objects[idx]
             if type(obj) == list:
                 newArr = []
                 for i in obj:
                     newArr.append(self.__resolveObject(i))
-                self.objects = self.objects[:idx] + [(newArr, True)] + self.objects[idx+1:]
+                self.resolved[idx] = newArr
                 return newArr
             if type(obj) == dict:
                 newDic = {}
@@ -127,10 +128,10 @@ class BPlistReader(object):
                     rk = self.__resolveObject(k)
                     rv = self.__resolveObject(v)
                     newDic[rk] = rv
-                self.objects = self.objects[:idx] + [(newDic, True)] + self.objects[idx+1:]
+                self.resolved[idx] = newDic
                 return newDic
             else:
-                self.objects = self.objects[:idx] + [(obj, True)] + self.objects[idx+1:]
+                self.resolved[idx] = obj
                 return obj
     
     def parse(self):
@@ -159,14 +160,14 @@ class BPlistReader(object):
             obj = self.__unpackItem(i)
             #print "** plist unpacked",k,type(obj),obj,"at",i
             k += 1
-            self.objects.append((obj,False))
+            self.objects.append(obj)
         
         # rebuild object tree
-        for i in range(len(self.objects)):
-            self.__resolveObject(i)
+        #for i in range(len(self.objects)):
+        #    self.__resolveObject(i)
         
         # return root object
-        return self.objects[self.top_object][0]
+        return self.__resolveObject(self.top_object)
     
     @classmethod
     def plistWithString(cls, s):
