@@ -1,5 +1,37 @@
 import struct
 
+class BPListWriter(object):
+    def __init__(self, objects):
+        self.bplist = ""
+        self.objects = objects
+    
+    def binary(self):
+        '''binary -> string
+        
+        Generates bplist
+        '''
+        self.data = 'bplist00'
+        
+        # TODO: flatten objects and count max length size
+        
+        # TODO: write objects and save offsets
+        
+        # TODO: write offsets
+        
+        # TODO: write metadata
+        
+        return self.data
+    
+    def write(self, filename):
+        '''
+        
+        Writes bplist to file
+        '''
+        if self.bplist != "":
+            # TODO: save self.bplist to file
+        else:
+            raise Exception('BPlist not yet generated')
+
 class BPlistReader(object):
     def __init__(self, s):
         self.data = s
