@@ -28,6 +28,7 @@ class BPListWriter(object):
         Writes bplist to file
         '''
         if self.bplist != "":
+            pass
             # TODO: save self.bplist to file
         else:
             raise Exception('BPlist not yet generated')
@@ -83,6 +84,29 @@ class BPlistReader(object):
             objref = offset+1
         return obj_count, objref
 
+    def __unpackFloatStruct(self, sz, s):
+        '''__unpackFloatStruct(size, string) -> float
+        
+        Unpacks the float of given size (4 or 8 bytes) from string
+        '''
+        if   sz == 4:
+            ot = '!f'
+        elif sz == 8:
+            ot = '!d'
+        else:
+            raise Exception('float unpack size '+str(sz)+' unsupported')
+        return struct.unpack(ot, s)[0]
+
+    def __unpackFloat(self, offset):
+        '''__unpackFloat(offset) -> float
+        
+        Unpacks float field from plist at given offset
+        '''
+        obj_header = struct.unpack('!B', self.data[offset])[0]
+        obj_type, obj_info = (obj_header & 0xF0), (obj_header & 0x0F)
+        int_sz = 2**obj_info
+        return int_sz, self.__unpackFloatStruct(int_sz, self.data[offset+1:offset+1+int_sz])
+
     def __unpackItem(self, offset):
         '''__unpackItem(offset)
         
@@ -98,15 +122,15 @@ class BPlistReader(object):
             elif obj_info == 0x09: # bool   0000 1001           // true
                 return True
             elif obj_info == 0x0F: # fill   0000 1111           // fill byte
-                return None # this is really pad byte, FIXME
+                raise Exception("0x0F Not Implemented") # this is really pad byte, FIXME
             else:
                 raise Exception('unpack item type '+str(obj_header)+' at '+str(offset)+ 'failed')
         elif obj_type == 0x10: #     int    0001 nnnn   ...     // # of bytes is 2^nnnn, big-endian bytes
             return self.__unpackInt(offset)
         elif obj_type == 0x20: #    real    0010 nnnn   ...     // # of bytes is 2^nnnn, big-endian bytes
-            return # FIXME: implement
+            return self.__unpackFloat(offset)
         elif obj_type == 0x30: #    date    0011 0011   ...     // 8 byte float follows, big-endian bytes
-            return # FIXME: implement
+            raise Exception("0x30 Not Implemented") # FIXME: implement
         elif obj_type == 0x40: #    data    0100 nnnn   [int]   ... // nnnn is number of bytes unless 1111 then int count follows, followed by bytes
             obj_count, objref = self.__resolveIntSize(obj_info, offset)
             return self.data[objref:objref+obj_count] # XXX: we return data as str
@@ -117,7 +141,9 @@ class BPlistReader(object):
             obj_count, objref = self.__resolveIntSize(obj_info, offset)
             return self.data[objref:objref+obj_count*2].decode('utf-16be')
         elif obj_type == 0x80: #    uid     1000 nnnn   ...     // nnnn+1 is # of bytes
-            return # FIXME: implement
+            # FIXME: Accept as a string for now
+            obj_count, objref = self.__resolveIntSize(obj_info, offset)
+            return self.data[objref:objref+obj_count]
         elif obj_type == 0xA0: #    array   1010 nnnn   [int]   objref* // nnnn is count, unless '1111', then int count follows
             obj_count, objref = self.__resolveIntSize(obj_info, offset)
             arr = []
@@ -126,7 +152,7 @@ class BPlistReader(object):
             return arr
         elif obj_type == 0xC0: #   set      1100 nnnn   [int]   objref* // nnnn is count, unless '1111', then int count follows
             # XXX: not serializable via apple implementation
-            return # FIXME: implement
+            raise Exception("0xC0 Not Implemented") # FIXME: implement
         elif obj_type == 0xD0: #   dict     1101 nnnn   [int]   keyref* objref* // nnnn is count, unless '1111', then int count follows
             obj_count, objref = self.__resolveIntSize(obj_info, offset)
             keys = []
