@@ -1,4 +1,5 @@
 import struct
+from datetime import datetime, timedelta
 
 class BPListWriter(object):
     def __init__(self, objects):
@@ -107,6 +108,10 @@ class BPlistReader(object):
         int_sz = 2**obj_info
         return int_sz, self.__unpackFloatStruct(int_sz, self.data[offset+1:offset+1+int_sz])
 
+    def __unpackDate(self, offset):
+        td = int(struct.unpack(">d", self.data[offset+1:offset+9])[0])
+        return datetime(year=2001,month=1,day=1) + timedelta(seconds=td)
+
     def __unpackItem(self, offset):
         '''__unpackItem(offset)
         
@@ -130,7 +135,7 @@ class BPlistReader(object):
         elif obj_type == 0x20: #    real    0010 nnnn   ...     // # of bytes is 2^nnnn, big-endian bytes
             return self.__unpackFloat(offset)
         elif obj_type == 0x30: #    date    0011 0011   ...     // 8 byte float follows, big-endian bytes
-            raise Exception("0x30 Not Implemented") # FIXME: implement
+            return self.__unpackDate(offset)
         elif obj_type == 0x40: #    data    0100 nnnn   [int]   ... // nnnn is number of bytes unless 1111 then int count follows, followed by bytes
             obj_count, objref = self.__resolveIntSize(obj_info, offset)
             return self.data[objref:objref+obj_count] # XXX: we return data as str
