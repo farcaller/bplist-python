@@ -73,6 +73,8 @@ class BPlistReader(object):
             ot = '!H'
         elif sz == 4:
             ot = '!I'
+        elif sz == 8:
+            ot = '!Q'
         else:
             raise Exception('int unpack size '+str(sz)+' unsupported')
         return struct.unpack(ot, s)[0]
