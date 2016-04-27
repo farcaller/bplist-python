@@ -56,7 +56,7 @@ class BPListWriter(object):
         else:
             raise Exception('BPlist not yet generated')
 
-class BPlistReader(object):
+class BPListReader(object):
     def __init__(self, s):
         self.data = s
         self.objects = []
