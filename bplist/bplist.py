@@ -21,6 +21,7 @@
 #################################################################################
 
 import struct
+import codecs
 from datetime import datetime, timedelta
 
 class BPListWriter(object):
@@ -91,7 +92,7 @@ class BPListReader(object):
         
         Unpacks int field from plist at given offset and returns its size and value
         '''
-        obj_header = struct.unpack('!B', self.data[offset])[0]
+        obj_header = self.data[offset]
         obj_type, obj_info = (obj_header & 0xF0), (obj_header & 0x0F)
         int_sz = 2**obj_info
         return int_sz, self.__unpackIntStruct(int_sz, self.data[offset+1:offset+1+int_sz])
@@ -127,7 +128,7 @@ class BPListReader(object):
         
         Unpacks float field from plist at given offset
         '''
-        obj_header = struct.unpack('!B', self.data[offset])[0]
+        obj_header = self.data[offset]
         obj_type, obj_info = (obj_header & 0xF0), (obj_header & 0x0F)
         int_sz = 2**obj_info
         return int_sz, self.__unpackFloatStruct(int_sz, self.data[offset+1:offset+1+int_sz])
@@ -141,7 +142,7 @@ class BPListReader(object):
         
         Unpacks and returns an item from plist
         '''
-        obj_header = struct.unpack('!B', self.data[offset])[0]
+        obj_header = self.data[offset]
         obj_type, obj_info = (obj_header & 0xF0), (obj_header & 0x0F)
         if   obj_type == 0x00:
             if   obj_info == 0x00: # null   0000 0000
@@ -211,8 +212,12 @@ class BPListReader(object):
                 return newArr
             if type(obj) == dict:
                 newDic = {}
-                for k,v in obj.iteritems():
-                    rk = self.__resolveObject(k)
+                for k,v in obj.items():
+                    key_resolved = self.__resolveObject(k)
+                    if isinstance(key_resolved, str):
+                        rk = key_resolved
+                    else:
+                        rk = codecs.decode(key_resolved, "utf-8")
                     rv = self.__resolveObject(v)
                     newDic[rk] = rv
                 self.resolved[idx] = newDic
@@ -223,7 +228,7 @@ class BPListReader(object):
     
     def parse(self):
         # read header
-        if self.data[:8] != 'bplist00':
+        if self.data[:8] != b'bplist00':
             raise Exception('Bad magic')
         
         # read trailer
@@ -271,3 +276,17 @@ def unplist(s):
     from Foundation import NSData, NSPropertyListSerialization
     d = NSData.dataWithBytes_length_(s, len(s))
     return NSPropertyListSerialization.propertyListWithData_options_format_error_(d, 0, None, None)
+
+if __name__ == "__main__":
+    import os
+    import sys
+    import json
+    file_path = sys.argv[1]
+
+    with open(file_path, "rb") as fp:
+        data = fp.read()
+
+    out = BPListReader(data).parse()
+
+    with open(file_path + ".json", "w") as fp:
+        json.dump(out, indent=4)

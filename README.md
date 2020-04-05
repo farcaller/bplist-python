@@ -12,3 +12,6 @@ Apple binary Property List reader/writer for Python
         # Now 'parsed' is a dictionary of values.
         
        
+## even simpler run
+python3 -m bplist [file_path]
+(auto-outputs file_path+".json")
