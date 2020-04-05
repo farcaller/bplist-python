@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
   name = 'bplist',
   packages = ['bplist'],  
-  version = '1.0',
+  version = '1.1',
   description = 'Apple binary Property List reader/writer for Python',
   install_requires=[],
   author = 'Vladimir Pouzanov',
