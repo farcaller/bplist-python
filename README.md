@@ -3,7 +3,7 @@ Apple binary Property List reader/writer for Python
 
 ## Simple parsing
 
-    from bplist import BPlistReader
+    from bplist import BPListReader
     
     with open('file.bplist', 'rb') as fp:
         reader = BPListReader(fp.read())
